@@ -1,5 +1,5 @@
 use move_compiler::parser;
-use move_compiler::parser::ast::{FunctionBody_, SequenceItem_};
+use move_compiler::parser::ast::{Exp, FunctionBody_, SequenceItem_};
 
 use crate::mutant::Mutant;
 use crate::operator::MutationOperator;
@@ -74,6 +74,14 @@ fn traverse_sequence_item(seq_item: parser::ast::SequenceItem) -> anyhow::Result
     }
 }
 
+fn parse_expressions(exp: Vec<parser::ast::Exp>) -> anyhow::Result<Vec<Mutant>> {
+    Ok(exp
+        .into_iter()
+        .map(parse_expression)
+        .collect::<Result<Vec<_>, _>>()?
+        .concat())
+}
+
 fn parse_expression(exp: parser::ast::Exp) -> anyhow::Result<Vec<Mutant>> {
     match exp.value {
         parser::ast::Exp_::BinopExp(left, binop, right) => {
@@ -103,23 +111,11 @@ fn parse_expression(exp: parser::ast::Exp) -> anyhow::Result<Vec<Mutant>> {
         },
         parser::ast::Exp_::Block(seq) => traverse_sequence(seq),
         parser::ast::Exp_::Pack(_, _, exps) => {
-            let mut mutants = vec![];
-            for (_, exp) in exps {
-                mutants.extend(parse_expression(exp)?);
-            }
-            Ok(mutants)
+            let exps = exps.into_iter().map(|(_, exp)| exp).collect::<Vec<Exp>>();
+            parse_expressions(exps)
         },
-        parser::ast::Exp_::Call(_, _, _, exps) | parser::ast::Exp_::Vector(_, _, exps) => Ok(exps
-            .value
-            .into_iter()
-            .map(parse_expression)
-            .collect::<Result<Vec<_>, _>>()?
-            .concat()),
-        parser::ast::Exp_::ExpList(exps) => Ok(exps
-            .into_iter()
-            .map(parse_expression)
-            .collect::<Result<Vec<_>, _>>()?
-            .concat()),
+        parser::ast::Exp_::Call(_, _, _, exps) | parser::ast::Exp_::Vector(_, _, exps) => parse_expressions(exps.value),
+        parser::ast::Exp_::ExpList(exps) => parse_expressions(exps),
         parser::ast::Exp_::IfElse(exp1, exp2, exp3) => {
             let mut mutants = parse_expression(*exp1)?;
             mutants.extend(parse_expression(*exp2)?);
@@ -131,11 +127,7 @@ fn parse_expression(exp: parser::ast::Exp) -> anyhow::Result<Vec<Mutant>> {
         parser::ast::Exp_::Quant(_, _, vexp, lexp, exp) => {
             let mut mutants = vec![];
             for exp in vexp {
-                let muts = exp
-                    .into_iter()
-                    .map(parse_expression)
-                    .collect::<Result<Vec<_>, _>>()?
-                    .concat();
+                let muts = parse_expressions(exp)?;
                 mutants.extend(muts);
             }
             if let Some(lexp) = lexp {
