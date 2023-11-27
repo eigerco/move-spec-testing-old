@@ -60,7 +60,10 @@ fn traverse_sequence(elem: parser::ast::Sequence) -> anyhow::Result<Vec<Mutant>>
         .concat();
 
     // exp represents the return expression so we need to remember to parse it
-    mutants.extend(parse_expression(exp.unwrap())?);
+    if let Some(exp) = *exp {
+        mutants.extend(parse_expression(exp)?);
+    }
+
     Ok(mutants)
 }
 
@@ -141,13 +144,7 @@ fn parse_expression(exp: parser::ast::Exp) -> anyhow::Result<Vec<Mutant>> {
             mutants.extend(parse_expression(*exp)?);
             Ok(mutants)
         },
-        parser::ast::Exp_::Return(exp) => {
-            if let Some(exp) = exp {
-                parse_expression(*exp)
-            } else {
-                Ok(vec![])
-            }
-        },
+        parser::ast::Exp_::Return(Some(exp)) => parse_expression(*exp),
         parser::ast::Exp_::Abort(exp)
         | parser::ast::Exp_::Annotate(exp, _)
         | parser::ast::Exp_::Borrow(_, exp)
