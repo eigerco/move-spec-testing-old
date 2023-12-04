@@ -83,16 +83,12 @@ It is mainly used to expose the `run_move_mutator` function, which is the entry 
 
 This layer is responsible for the main logic of the application. The main application layer with crucial components used to generate mutants:
 
-The functions in the `mutate.rs` are responsible for traversing the Abstract Syntax Tree (AST) of the Move source code and searching for places where potential mutation operators can be applied. It has been AST from the `parser` Move compiler module used, but it's not a big change to traverse other trees. The `parser` tree has been used because it's the closest module to the original source file and represents the exact structure of the source file. It makes it much easier to replace expressions with the mutated ones.
-The idea behind that search is as follows:
-- The `mutate` function is the entry point. It takes the AST of a Move program as input and returns a list of mutants (not yet generated). It does this by iterating over the source definitions in the AST and calling the appropriate function to traverse each definition based on its type (Address, Module, or Script).
-- The `traverse_module` function is called for each module in the AST. It iterates over the module members and calls the appropriate function to traverse each member based on its type (like Function or Constant).
-- `traverse_function` is called for each function found. It looks for a function body and calls the `traverse_sequence` to traverse the sequence of expressions.
-- `traverse_sequence` is executed for each sequence. It iterates over the sequence items and calls the `traverse_sequence_item` for them.
-- `traverse_sequence_item` checks the type of the sequence item (`Bind` or `Seq`) and calls the `parse_expression` function to parse the expression associated with the sequence item.
-- the main parsing function is the `parse_expression`. It checks the type of the expression and marks that place as the appropriate for the mutation operator to be applied (e.g., binary or unary expressions). Sub-expressions are parsed recursively.
+The functions in the `mutate.rs` are responsible for traversing the Abstract Syntax Tree (AST) of the Move source code and searching for places where potential mutation operators can be applied. It has been AST from the `parser` Move compiler module used, but it may not be a big change to traverse other trees (unless the locations pointed by the appropriate structs will match the source code). The `parser` tree has been used because it's the closest module to the original source file and represents the exact structure of the source file. It makes it much easier to replace expressions with the mutated ones.
+The idea behind that search is as follows: there is a `mutate` function which is the entry point. It takes the AST of a Move program as input and returns a list of mutants (not yet generated). It does this by iterating over the source definitions in the AST and calling the appropriate function to traverse each definition based on its type (Address, Module, or Script). There are several functions to go through different types of AST nodes. 
 
-When a new place for mutation is found, any of the above functions can create a new mutant. The mutation operator is passed as an argument containing the appropriate AST node. As each node has its own location (`Spanned` structure with `Loc`) it's possible to pass the node without any additional overhead.
+The main parsing function is the `parse_expression`. It checks the type of the expression and marks that place as the appropriate for the mutation operator to be applied (e.g., binary or unary expressions). Sub-expressions are parsed recursively.
+
+When a new place for mutation is found, new mutant is created. The mutation operator is passed as an argument containing the appropriate AST node. As each node has its own location (`Spanned` structure with `Loc`) it's possible to pass the node without any additional overhead.
 This process continues recursively until all nodes in the AST have been visited and all possible mutants have been generated. The mutate function then returns the list of mutants.
 
 Mutations are applied during output generation. Each potential mutation place is run through the `apply` function, which applies the mutation operator to sources. That produces an output file which can be saved.
