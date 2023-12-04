@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Move mutator tool is a tool that mutates Move source code. It is used to help test the robustness of Move analyzers and verifiers by generating different code versions (mutants).
+The Move mutator is a tool that mutates Move source code. It is used to help test the robustness of Move analyzers and verifiers by generating different code versions (mutants).
 
 ## Prototype
 This chapter will be deleted upon implementing the Move mutator tool.
@@ -13,7 +13,12 @@ Mutants are currently stored in the `mutants_output` directory, and there is no 
 
 The report is generated on screen and lists all generated mutants (which mutation operator was used, location in the original source file, and mutant output). It's not possible to create the report in a file.
 
-Not supported: configuration file, generating reports, nicely formatted output, mutant files output structure, other mutation operators than binary and unary operator replacement.
+Not supported:
+- configuration file,
+- generating reports,
+- nicely formatted output,
+- mutant files output structure,
+- other mutation operators than binary and unary operator replacement.
 
 ### What's missing in the Move ecosystem
 
@@ -35,8 +40,6 @@ The mutation process is separated from the other parts of the verification proce
 
 ### Presentation layer
 
-The presentation layer is responsible for interaction with the user. To keep the application usage consistent, the presentation layer uses the same API calls used by external systems to execute commands received from a user.
-
 In this project, the presentation layer execution modules (displaying and fetching data from/to the user) are moved to the `aptos` and `move` command line interfaces.
 
 Mutator itself provides a CLI module, which is integrated into the existing Aptos repository - it handles options that the mutator tool can use.
@@ -45,7 +48,7 @@ There are two types of output that the Move mutator tool generates:
 - the actual mutants (source code files)
 - the report (JSON and text file)
 
-The actual mutants are stored in the output directory (default: `mutants_output/mutants`). The directory structure is the same as in the original source code. The mutant filename consists of the original source filename with mutation information (operator) and the next index appended.
+The actual mutants are stored in the output directory (default: `mutants_output/mutants`). The directory structure is the same as in the original source code. The mutant filename consists of the original source filename with mutation information (operator) and the mutant index appended.
 
 The report is generated in the output directory. It's possible to create the report in JSON or text format. The JSON format is used to pass the report to other tools. The text format is used by the user to display the report on the screen.
 
@@ -145,23 +148,23 @@ Move mutator can be integrated with any command line interface. To do so, CLI ap
 
 Currently, the Move mutator tool is integrated with the `move-cli` and `aptos` command line interfaces. There is introduced a new command: `mutate` which allows to pass the mutator arguments. Check README.md for more details.
 
-## Proving correctness
-
-The Move mutator tool is designed to create mutants only. It does not perform the proving process as it is not the goal of the tool. Output of the Move mutator tool can be consumed by many other tools, not only the Prover. For example, some might want to generate mutants to check testsuite completness and won't run Prover at all.
-
 ## Specification verification tool
 
-The specification verification tool is a tool placed inside the `aptos` repository, which provides additional `aptos` subcommand - `spec_verify` which does the following:
-1. Takes arguments both for the Move Prover tool and for the Move mutator tool.
-2. Run the Move mutator tool to generate mutants.
+The Move mutator tool is designed to create mutants only. It does not perform the proving process as it is not the goal of the tool.
+
+The specification verification tool is a tool placed inside the `aptos` repository, which provides additional `aptos` subcommand - `spec-verify` which does the following:
+1. Takes arguments both for the Move Prover tool and for the Move mutator tool. It can also read the configuration from the JSON configuration file.
+2. Run the Move mutator tool (`mutate`) to generate mutants with the previously specified parameters.
 3. Run the Move Prover tool, passing the generated mutants one by one.
 4. Collect the results and generate a report.
 
-The report contains information about the mutants killed for each tested source file. All the intermediate results are saved in the `mutants_output` directory.
+The report contains information about the generated mutants as well as the killed ones for each tested source file. All the intermediate results are saved in the configurable (default: `mutants_output`) directory.
 
 ## Mutation operators
 
-Mutation operators can be divided into two groups. The first group is composed of mutation operators that, once replaced, do not change the length of the original program. That operator can be mixed inside on file to achieve more complex mutations. The second group is composed of mutation operators that, once replaced, change the length of the original program. That operator cannot be mixed inside one file, so each mutant has only one mutation of that kind. It should be possible to combine many non-changing file length mutation operators with one changing len mutation operator, but the latter needs to be applied as the last one.
+Mutation operators can be divided into two groups. The first group is composed of mutation operators that, once replaced, do not change the length of the original program. That operator can be mixed inside on file to achieve more complex mutations. The second group is composed of mutation operators that, once replaced, change the length of the original program. That operator cannot be mixed inside one file, so each mutant has only one mutation of that kind. It should be possible to combine many non-changing file length mutation operators with one changing len mutation operator, but the latter needs to be applied as the last one. Such behaviour needs to be enabled explicitly in the configuration, as by default, it will generate only one mutation at once.
+
+The above behaviour can be discussed if it's really needed.
 
 The reason for introducing two groups of mutation operators is connected with the way the Move mutator tool works. It reads the source file(-s) once and then works on the original AST. If any previous mutation changes the original file, then it would demand reloading the modified source (as upon change, all current AST locations become outdated), parsing the AST and again for possible mutations. It would be very inefficient.
 
