@@ -137,25 +137,20 @@ pub struct MutationReport {
 
 impl MutationReport {
     /// Creates a new `MutationReport` instance.
-    pub fn new(mutant_path: &Path, original_file: &Path) -> Self {
+    /// Generates diff (patch) between the original and mutated source.
+    pub fn new(mutant_path: &Path, original_file: &Path, mutated_source: &str, original_source: &str ) -> Self {
+        let patch = diffy::create_patch(original_source, mutated_source);
         Self {
             mutant_path: mutant_path.to_path_buf(),
             original_file: original_file.to_path_buf(),
             mutations: vec![],
-            diff: String::new(),
+            diff: patch.to_string(),
         }
     }
 
     /// Adds a `Mutation` to the `MutationReport`.
     pub fn add_modification(&mut self, modification: Mutation) {
         self.mutations.push(modification);
-    }
-
-    /// Generate diff (patch) between the original and mutated source.
-    /// The diff is stored in the `MutationReport`.
-    pub fn generate_diff(&mut self, original_source: &str, mutated_source: &str) {
-        let patch = diffy::create_patch(original_source, mutated_source);
-        self.diff = patch.to_string();
     }
 }
 
@@ -177,9 +172,8 @@ mod tests {
             "old".to_string(),
             "new".to_string(),
         );
-        let mut report_entry = MutationReport::new(Path::new("file"), Path::new("original_file"));
+        let mut report_entry = MutationReport::new(Path::new("file"), Path::new("original_file"), "\n", "diff\n");
         report_entry.add_modification(modification);
-        report_entry.generate_diff("diff\n", "\n");
 
         report.add_entry(report_entry.clone());
         assert_eq!(
@@ -219,7 +213,7 @@ mod tests {
             "old".to_string(),
             "new".to_string(),
         );
-        let mut report_entry = MutationReport::new(Path::new("file"), Path::new("original_file"));
+        let mut report_entry = MutationReport::new(Path::new("file"), Path::new("original_file"), "\n", "diff\n");
         report_entry.add_modification(modification);
         report.add_entry(report_entry);
 

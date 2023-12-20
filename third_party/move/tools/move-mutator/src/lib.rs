@@ -52,9 +52,8 @@ pub fn run_move_mutator(
                     mutant_path.to_str().unwrap_or("")
                 );
                 std::fs::write(&mutant_path, &mutated.mutated_source)?;
-                let mut entry = report::MutationReport::new(mutant_path.as_path(), path);
+                let mut entry = report::MutationReport::new(mutant_path.as_path(), path, &mutated.mutated_source, &source);
                 entry.add_modification(mutated.mutation);
-                entry.generate_diff(&source, &mutated.mutated_source);
                 report.add_entry(entry);
                 i += 1;
             }
