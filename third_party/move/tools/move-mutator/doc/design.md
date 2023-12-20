@@ -56,21 +56,50 @@ JSON report format sample:
 
 ```json
 {
-    "mutants": [
-        {
-            "id": 1,
-            "operator": "binary_operator_replacement",
-            "category": "arithmetic",
-            "location": {
-                "file": "path/to/file",
-                "start_index": 1,
-                "stop_index": 1
+    "mutations": [
+      {
+        "file": "mutants_output/shift_0.move",
+        "original_file": "third_party/move/move-prover/tests/sources/functional/shift.move",
+        "modifications": [
+          {
+            "changed_place": {
+              "start": 243,
+              "end": 245
             },
-            "original": "original expression",
-            "mutant": "mutated expression"
-        }
+            "operator_name": "BinaryOperator",
+            "old_value": "<<",
+            "new_value": ">>"
+          }
+        ],
+        "diff": "--- original\n+++ modified\n@@ -5,7 +5,7 @@\n module 0x42::TestShift {\n\n     fun shiftl_1_correct(x: u64): u64 {\n-        x << 1\n+        x >> 1\n     }\n\n     spec shiftl_1_correct {\n"
+      }
     ]
 }
+```
+
+Text format sample:
+```
+File: mutants_output/shift_0.move
+Original file: third_party/move/move-prover/tests/sources/functional/shift.move
+Modifications:
+  Operator: binary_operator_replacement
+  Old value: <<
+  New value: >>
+  Changed place: 243-245
+Diff:
+--- original
++++ modified
+@@ -5,7 +5,7 @@
+ module 0x42::TestShift {
+
+     fun shiftl_1_correct(x: u64): u64 {
+-        x << 1
++        x >> 1
+     }
+
+     spec shiftl_1_correct {
+
+----------------------------------------
 ```
 
 ### Service layer
