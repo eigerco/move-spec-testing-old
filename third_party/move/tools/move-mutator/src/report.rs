@@ -3,24 +3,24 @@ use serde_json;
 use std::io::Write;
 
 /// The `Report` struct represents a report of mutations.
-/// It contains a vector of `ReportEntry` instances.
+/// It contains a vector of `MutationReport` instances.
 #[derive(Debug, Clone, Serialize)]
 pub struct Report {
     /// The vector of `ReportEntry` instances.
-    mutations: Vec<ReportEntry>,
+    mutants: Vec<MutationReport>,
 }
 
 impl Report {
     /// Creates a new `Report` instance.
     pub fn new() -> Self {
         Self {
-            mutations: Vec::new(),
+            mutants: Vec::new(),
         }
     }
 
-    /// Adds a new `ReportEntry` to the report.
-    pub fn add_entry(&mut self, entry: ReportEntry) {
-        self.mutations.push(entry);
+    /// Adds a new `MutationReport` to the report.
+    pub fn add_entry(&mut self, entry: MutationReport) {
+        self.mutants.push(entry);
     }
 
     /// Saves the `Report` as a JSON file.
@@ -33,11 +33,11 @@ impl Report {
     /// Saves the `Report` as a text file.
     pub fn save_to_text_file(&self, path: &str) -> std::io::Result<()> {
         let mut file = std::fs::File::create(path)?;
-        for entry in &self.mutations {
+        for entry in &self.mutants {
             writeln!(file, "File: {}", entry.file)?;
             writeln!(file, "Original file: {}", entry.original_file)?;
-            writeln!(file, "Modifications:")?;
-            for modification in &entry.modifications {
+            writeln!(file, "Mutations:")?;
+            for modification in &entry.mutations {
                 writeln!(file, "  Operator: {}", modification.operator_name)?;
                 writeln!(file, "  Old value: {}", modification.old_value)?;
                 writeln!(file, "  New value: {}", modification.new_value)?;
@@ -69,16 +69,18 @@ pub struct Range {
 
 impl Range {
     /// Creates a new `Range` instance.
+    /// The start must be smaller or equal to the end.
     pub fn new(start: usize, end: usize) -> Self {
+        assert!(start <= end);
         Self { start, end }
     }
 }
 
-/// The `Modification` struct represents a modification that was applied to a file.
+/// The `Mutation` struct represents a modification that was applied to a file.
 /// It contains the location of the modification, the name of the mutation operator, the old value and the new value.
 /// It is used to represent a single modification inside a `ReportEntry`.
 #[derive(Debug, Clone, Serialize)]
-pub struct Modification {
+pub struct Mutation {
     /// The location of the modification.
     changed_place: Range,
     /// The name of the mutation operator.
@@ -89,8 +91,8 @@ pub struct Modification {
     new_value: String,
 }
 
-impl Modification {
-    /// Creates a new `Modification` instance.
+impl Mutation {
+    /// Creates a new `Mutation` instance.
     pub fn new(
         changed_place: Range,
         operator_name: String,
@@ -106,38 +108,38 @@ impl Modification {
     }
 }
 
-/// The `ReportEntry` struct represents an entry in a report.
+/// The `MutationReport` struct represents an entry in a report.
 /// It contains information about a mutation that was applied to a file.
 #[derive(Debug, Clone, Serialize)]
-pub struct ReportEntry {
+pub struct MutationReport {
     /// The path to the mutated file.
     file: String,
     /// The path to the original file.
     original_file: String,
     /// The modifications that were applied to the file.
-    modifications: Vec<Modification>,
+    mutations: Vec<Mutation>,
     /// The diff between the original and mutated file.
     diff: String,
 }
 
-impl ReportEntry {
-    /// Creates a new `ReportEntry` instance.
+impl MutationReport {
+    /// Creates a new `MutationReport` instance.
     pub fn new(file: String, original_file: String) -> Self {
         Self {
             file,
             original_file,
-            modifications: vec![],
+            mutations: vec![],
             diff: String::new(),
         }
     }
 
-    /// Adds a `Modification` to the `ReportEntry`.
-    pub fn add_modification(&mut self, modification: Modification) {
-        self.modifications.push(modification);
+    /// Adds a `Mutation` to the `MutationReport`.
+    pub fn add_modification(&mut self, modification: Mutation) {
+        self.mutations.push(modification);
     }
 
     /// Generate diff (patch) between the original and mutated source.
-    /// The diff is stored in the `ReportEntry`.
+    /// The diff is stored in the `MutationReport`.
     pub fn generate_diff(&mut self, original_source: &str, mutated_source: &str) {
         let patch = diffy::create_patch(original_source, mutated_source);
         self.diff = patch.to_string();
@@ -153,23 +155,23 @@ mod tests {
     #[test]
     fn test_report() {
         let mut report = Report::new();
-        assert_eq!(report.to_json().unwrap(), "{\n  \"mutations\": []\n}");
+        assert_eq!(report.to_json().unwrap(), "{\n  \"mutants\": []\n}");
 
         let range = Range::new(0, 10);
-        let modification = Modification::new(
+        let modification = Mutation::new(
             range,
             "operator".to_string(),
             "old".to_string(),
             "new".to_string(),
         );
-        let mut report_entry = ReportEntry::new("file".to_string(), "original_file".to_string());
+        let mut report_entry = MutationReport::new("file".to_string(), "original_file".to_string());
         report_entry.add_modification(modification);
         report_entry.generate_diff("diff\n", "\n");
 
         report.add_entry(report_entry.clone());
         assert_eq!(
             report.to_json().unwrap(),
-            "{\n  \"mutations\": [\n    {\n      \"file\": \"file\",\n      \"original_file\": \"original_file\",\n      \"modifications\": [\n        {\n          \"changed_place\": {\n            \"start\": 0,\n            \"end\": 10\n          },\n          \"operator_name\": \"operator\",\n          \"old_value\": \"old\",\n          \"new_value\": \"new\"\n        }\n      ],\n      \"diff\": \"--- original\\n+++ modified\\n@@ -1 +1 @@\\n-diff\\n+\\n\"\n    }\n  ]\n}"
+            "{\n  \"mutants\": [\n    {\n      \"file\": \"file\",\n      \"original_file\": \"original_file\",\n      \"mutations\": [\n        {\n          \"changed_place\": {\n            \"start\": 0,\n            \"end\": 10\n          },\n          \"operator_name\": \"operator\",\n          \"old_value\": \"old\",\n          \"new_value\": \"new\"\n        }\n      ],\n      \"diff\": \"--- original\\n+++ modified\\n@@ -1 +1 @@\\n-diff\\n+\\n\"\n    }\n  ]\n}"
         );
     }
 
@@ -185,7 +187,7 @@ mod tests {
     #[test]
     fn test_modification() {
         let range = Range::new(0, 10);
-        let modification = Modification::new(
+        let modification = Mutation::new(
             range,
             "operator".to_string(),
             "old".to_string(),
@@ -198,13 +200,13 @@ mod tests {
     fn saves_report_as_text_file_successfully() {
         let mut report = Report::new();
         let range = Range::new(0, 10);
-        let modification = Modification::new(
+        let modification = Mutation::new(
             range,
             "operator".to_string(),
             "old".to_string(),
             "new".to_string(),
         );
-        let mut report_entry = ReportEntry::new("file".to_string(), "original_file".to_string());
+        let mut report_entry = MutationReport::new("file".to_string(), "original_file".to_string());
         report_entry.add_modification(modification);
         report.add_entry(report_entry);
 
@@ -216,7 +218,7 @@ mod tests {
         file.read_to_string(&mut contents).unwrap();
         assert!(contents.contains("File: file"));
         assert!(contents.contains("Original file: original_file"));
-        assert!(contents.contains("Modifications:"));
+        assert!(contents.contains("Mutations:"));
         assert!(contents.contains("Operator: operator"));
         assert!(contents.contains("Old value: old"));
         assert!(contents.contains("New value: new"));

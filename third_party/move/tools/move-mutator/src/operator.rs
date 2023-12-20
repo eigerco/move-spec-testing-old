@@ -1,22 +1,22 @@
-use crate::report::{Modification, Range};
+use crate::report::{Mutation, Range};
 use move_command_line_common::files::FileHash;
 use move_compiler::parser::ast::{BinOp, BinOp_, UnaryOp};
 use std::fmt;
 
 /// Mutation result that contains the mutated source code and the modification that was applied.
-pub struct MutationResult {
+pub struct MutantInfo {
     /// The mutated source code.
     pub mutated_source: String,
     /// The modification that was applied.
-    pub modification: Modification,
+    pub mutation: Mutation,
 }
 
-impl MutationResult {
+impl MutantInfo {
     /// Creates a new mutation result.
-    pub fn new(mutated_source: String, modification: Modification) -> Self {
+    pub fn new(mutated_source: String, mutation: Mutation) -> Self {
         Self {
             mutated_source,
-            modification,
+            mutation,
         }
     }
 }
@@ -31,7 +31,7 @@ pub enum MutationOperator {
 impl MutationOperator {
     /// Applies the mutation operator to the given source code.
     /// Returns differently mutated source code listings in a vector.
-    pub fn apply(&self, source: &str) -> Vec<MutationResult> {
+    pub fn apply(&self, source: &str) -> Vec<MutantInfo> {
         match self {
             MutationOperator::BinaryOperator(bin_op) => {
                 let start = bin_op.loc.start() as usize;
@@ -58,9 +58,9 @@ impl MutationOperator {
                     .map(|op| {
                         let mut mutated_source = source.to_string();
                         mutated_source.replace_range(start..end, op);
-                        MutationResult::new(
+                        MutantInfo::new(
                             mutated_source,
-                            Modification::new(
+                            Mutation::new(
                                 Range::new(start, end),
                                 "binary_operator_replacement".to_string(),
                                 cur_op.to_string(),
@@ -81,9 +81,9 @@ impl MutationOperator {
                     .map(|op| {
                         let mut mutated_source = source.to_string();
                         mutated_source.replace_range(start..end, op);
-                        MutationResult::new(
+                        MutantInfo::new(
                             mutated_source,
-                            Modification::new(
+                            Mutation::new(
                                 Range::new(start, end),
                                 "unary_operator_replacement".to_string(),
                                 cur_op.to_string(),

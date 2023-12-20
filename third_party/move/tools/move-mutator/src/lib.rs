@@ -48,8 +48,8 @@ pub fn run_move_mutator(
                 let mut_path = format!("mutants_output/{}_{}.move", file_name, i);
                 println!("{} written to {}", mutant, &mut_path);
                 std::fs::write(mut_path.clone(), &mutated.mutated_source)?;
-                let mut entry = report::ReportEntry::new(mut_path, filename.to_string());
-                entry.add_modification(mutated.modification);
+                let mut entry = report::MutationReport::new(mut_path, filename.to_string());
+                entry.add_modification(mutated.mutation);
                 entry.generate_diff(&source, &mutated.mutated_source);
                 report.add_entry(entry);
                 i += 1;

@@ -1,4 +1,4 @@
-use crate::operator::{MutationOperator, MutationResult};
+use crate::operator::{MutationOperator, MutantInfo};
 use move_command_line_common::files::FileHash;
 use std::fmt;
 
@@ -22,7 +22,7 @@ impl Mutant {
 
     /// Applies the mutation operator to the given source code, by calling the mutation operator's apply method.
     /// Returns differently mutated source code listings in a vector.
-    pub fn apply(&self, source: &str) -> Vec<MutationResult> {
+    pub fn apply(&self, source: &str) -> Vec<MutantInfo> {
         self.operator.apply(source)
     }
 }
