@@ -58,7 +58,7 @@ JSON report format sample:
 {
     "mutants": [
       {
-        "file": "mutants_output/shift_0.move",
+        "mutant_path": "mutants_output/shift_0.move",
         "original_file": "third_party/move/move-prover/tests/sources/functional/shift.move",
         "mutations": [
           {
@@ -79,7 +79,7 @@ JSON report format sample:
 
 Text format sample:
 ```
-File: mutants_output/shift_0.move
+Mutant path: mutants_output/shift_0.move
 Original file: third_party/move/move-prover/tests/sources/functional/shift.move
 Mutations:
   Operator: binary_operator_replacement

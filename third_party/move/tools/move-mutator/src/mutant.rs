@@ -1,4 +1,4 @@
-use crate::operator::{MutationOperator, MutantInfo};
+use crate::operator::{MutantInfo, MutationOperator};
 use move_command_line_common::files::FileHash;
 use std::fmt;
 

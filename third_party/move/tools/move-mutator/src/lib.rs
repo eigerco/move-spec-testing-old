@@ -45,10 +45,14 @@ pub fn run_move_mutator(
         for mutant in mutants.iter().filter(|m| m.get_file_hash() == hash) {
             let mutated_sources = mutant.apply(&source);
             for mutated in mutated_sources {
-                let mut_path = format!("mutants_output/{}_{}.move", file_name, i);
-                println!("{} written to {}", mutant, &mut_path);
-                std::fs::write(mut_path.clone(), &mutated.mutated_source)?;
-                let mut entry = report::MutationReport::new(mut_path, filename.to_string());
+                let mutant_path = PathBuf::from(format!("mutants_output/{}_{}.move", file_name, i));
+                println!(
+                    "{} written to {}",
+                    mutant,
+                    mutant_path.to_str().unwrap_or("")
+                );
+                std::fs::write(&mutant_path, &mutated.mutated_source)?;
+                let mut entry = report::MutationReport::new(mutant_path.as_path(), path);
                 entry.add_modification(mutated.mutation);
                 entry.generate_diff(&source, &mutated.mutated_source);
                 report.add_entry(entry);
@@ -57,8 +61,8 @@ pub fn run_move_mutator(
         }
     }
 
-    report.save_to_json_file("mutants_output/report.json")?;
-    report.save_to_text_file("mutants_output/report.txt")?;
+    report.save_to_json_file(Path::new("mutants_output/report.json"))?;
+    report.save_to_text_file(Path::new("mutants_output/report.txt"))?;
 
     Ok(())
 }

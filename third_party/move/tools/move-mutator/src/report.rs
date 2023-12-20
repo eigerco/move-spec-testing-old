@@ -1,6 +1,7 @@
 use serde::Serialize;
 use serde_json;
 use std::io::Write;
+use std::path::{Path, PathBuf};
 
 /// The `Report` struct represents a report of mutations.
 /// It contains a vector of `MutationReport` instances.
@@ -24,24 +25,36 @@ impl Report {
     }
 
     /// Saves the `Report` as a JSON file.
-    pub fn save_to_json_file(&self, path: &str) -> std::io::Result<()> {
+    pub fn save_to_json_file(&self, path: &Path) -> std::io::Result<()> {
         let file = std::fs::File::create(path)?;
         serde_json::to_writer_pretty(file, &self)
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))
     }
 
     /// Saves the `Report` as a text file.
-    pub fn save_to_text_file(&self, path: &str) -> std::io::Result<()> {
+    pub fn save_to_text_file(&self, path: &Path) -> std::io::Result<()> {
         let mut file = std::fs::File::create(path)?;
         for entry in &self.mutants {
-            writeln!(file, "File: {}", entry.file)?;
-            writeln!(file, "Original file: {}", entry.original_file)?;
+            writeln!(
+                file,
+                "Mutant path: {}",
+                entry.mutant_path.to_str().unwrap_or("")
+            )?;
+            writeln!(
+                file,
+                "Original file: {}",
+                entry.original_file.to_str().unwrap_or("")
+            )?;
             writeln!(file, "Mutations:")?;
             for modification in &entry.mutations {
                 writeln!(file, "  Operator: {}", modification.operator_name)?;
                 writeln!(file, "  Old value: {}", modification.old_value)?;
                 writeln!(file, "  New value: {}", modification.new_value)?;
-                writeln!(file, "  Changed place: {}-{}", modification.changed_place.start, modification.changed_place.end)?;
+                writeln!(
+                    file,
+                    "  Changed place: {}-{}",
+                    modification.changed_place.start, modification.changed_place.end
+                )?;
             }
             writeln!(file, "Diff:")?;
             writeln!(file, "{}", entry.diff)?;
@@ -113,9 +126,9 @@ impl Mutation {
 #[derive(Debug, Clone, Serialize)]
 pub struct MutationReport {
     /// The path to the mutated file.
-    file: String,
+    mutant_path: PathBuf,
     /// The path to the original file.
-    original_file: String,
+    original_file: PathBuf,
     /// The modifications that were applied to the file.
     mutations: Vec<Mutation>,
     /// The diff between the original and mutated file.
@@ -124,10 +137,10 @@ pub struct MutationReport {
 
 impl MutationReport {
     /// Creates a new `MutationReport` instance.
-    pub fn new(file: String, original_file: String) -> Self {
+    pub fn new(mutant_path: &Path, original_file: &Path) -> Self {
         Self {
-            file,
-            original_file,
+            mutant_path: mutant_path.to_path_buf(),
+            original_file: original_file.to_path_buf(),
             mutations: vec![],
             diff: String::new(),
         }
@@ -164,14 +177,14 @@ mod tests {
             "old".to_string(),
             "new".to_string(),
         );
-        let mut report_entry = MutationReport::new("file".to_string(), "original_file".to_string());
+        let mut report_entry = MutationReport::new(Path::new("file"), Path::new("original_file"));
         report_entry.add_modification(modification);
         report_entry.generate_diff("diff\n", "\n");
 
         report.add_entry(report_entry.clone());
         assert_eq!(
             report.to_json().unwrap(),
-            "{\n  \"mutants\": [\n    {\n      \"file\": \"file\",\n      \"original_file\": \"original_file\",\n      \"mutations\": [\n        {\n          \"changed_place\": {\n            \"start\": 0,\n            \"end\": 10\n          },\n          \"operator_name\": \"operator\",\n          \"old_value\": \"old\",\n          \"new_value\": \"new\"\n        }\n      ],\n      \"diff\": \"--- original\\n+++ modified\\n@@ -1 +1 @@\\n-diff\\n+\\n\"\n    }\n  ]\n}"
+            "{\n  \"mutants\": [\n    {\n      \"mutant_path\": \"file\",\n      \"original_file\": \"original_file\",\n      \"mutations\": [\n        {\n          \"changed_place\": {\n            \"start\": 0,\n            \"end\": 10\n          },\n          \"operator_name\": \"operator\",\n          \"old_value\": \"old\",\n          \"new_value\": \"new\"\n        }\n      ],\n      \"diff\": \"--- original\\n+++ modified\\n@@ -1 +1 @@\\n-diff\\n+\\n\"\n    }\n  ]\n}"
         );
     }
 
@@ -206,17 +219,17 @@ mod tests {
             "old".to_string(),
             "new".to_string(),
         );
-        let mut report_entry = MutationReport::new("file".to_string(), "original_file".to_string());
+        let mut report_entry = MutationReport::new(Path::new("file"), Path::new("original_file"));
         report_entry.add_modification(modification);
         report.add_entry(report_entry);
 
-        let path = "test_report.txt";
+        let path = Path::new("test_report.txt");
         report.save_to_text_file(path).unwrap();
 
         let mut file = fs::File::open(path).unwrap();
         let mut contents = String::new();
         file.read_to_string(&mut contents).unwrap();
-        assert!(contents.contains("File: file"));
+        assert!(contents.contains("Mutant path: file"));
         assert!(contents.contains("Original file: original_file"));
         assert!(contents.contains("Mutations:"));
         assert!(contents.contains("Operator: operator"));
@@ -231,7 +244,7 @@ mod tests {
     #[should_panic(expected = "No such file or directory")]
     fn fails_to_save_report_to_non_existent_directory() {
         let report = Report::new();
-        let path = "non_existent_directory/test_report.txt";
+        let path = Path::new("non_existent_directory/test_report.txt");
         report.save_to_text_file(path).unwrap();
     }
 }
