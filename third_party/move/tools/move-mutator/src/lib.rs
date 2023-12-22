@@ -66,12 +66,8 @@ pub fn run_move_mutator(
         for mutant in mutants.iter().filter(|m| m.get_file_hash() == hash) {
             let mutated_sources = mutant.apply(&source);
             for mutated in mutated_sources {
-                let mutant_path = PathBuf::from(format!(
-                    "{}/{}_{}.move",
-                    &output_dir.to_str().unwrap_or(DEFAULT_OUTPUT_DIR),
-                    file_name,
-                    i
-                ));
+                let mutant_path = setup_mutant_path(&output_dir, file_name, i);
+
                 println!(
                     "{} written to {}",
                     mutant,
@@ -99,6 +95,18 @@ pub fn run_move_mutator(
     Ok(())
 }
 
+/// Sets up the path for the mutant.
+#[inline]
+fn setup_mutant_path(output_dir: &Path, filename: &str, index: u64) -> PathBuf {
+    PathBuf::from(format!(
+        "{}/{}_{}.move",
+        &output_dir.to_str().unwrap_or(DEFAULT_OUTPUT_DIR),
+        filename,
+        index
+    ))
+}
+
+/// Sets up the output directory for the mutants.
 fn setup_output_dir(mutator_configuration: &Configuration) -> anyhow::Result<PathBuf> {
     let output_dir = mutator_configuration
         .project
@@ -117,4 +125,83 @@ fn setup_output_dir(mutator_configuration: &Configuration) -> anyhow::Result<Pat
     std::fs::create_dir(&output_dir)?;
 
     Ok(output_dir)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use std::path::Path;
+    use std::path::PathBuf;
+    use tempfile::tempdir;
+
+    #[test]
+    fn setup_mutant_path_creates_correct_path() {
+        let output_dir = Path::new("/path/to/output");
+        let filename = "test";
+        let index = 1;
+        let result = setup_mutant_path(output_dir, filename, index);
+        assert_eq!(result, PathBuf::from("/path/to/output/test_1.move"));
+    }
+
+    #[test]
+    fn setup_mutant_path_handles_empty_output_dir() {
+        let output_dir = Path::new("");
+        let filename = "test";
+        let index = 1;
+        let result = setup_mutant_path(output_dir, filename, index);
+        assert_eq!(result, PathBuf::from("/test_1.move"));
+    }
+
+    #[test]
+    fn setup_mutant_path_handles_empty_filename() {
+        let output_dir = Path::new("/path/to/output");
+        let filename = "";
+        let index = 1;
+        let result = setup_mutant_path(output_dir, filename, index);
+        assert_eq!(result, PathBuf::from("/path/to/output/_1.move"));
+    }
+
+    #[test]
+    fn setup_output_dir_creates_directory_if_not_exists() {
+        let temp_dir = tempdir().unwrap();
+        let output_dir = temp_dir.path().join("output");
+        let options = cli::Options {
+            output_dir: Some(output_dir.clone()),
+            no_overwrite: Some(false),
+            ..Default::default()
+        };
+        let config = Configuration::new(options, None);
+        assert!(setup_output_dir(&config).is_ok());
+        assert!(output_dir.exists());
+    }
+
+    #[test]
+    fn setup_output_dir_overwrites_directory_if_exists_and_no_overwrite_is_false() {
+        let temp_dir = tempdir().unwrap();
+        let output_dir = temp_dir.path().join("output");
+        fs::create_dir(&output_dir).unwrap();
+        let options = cli::Options {
+            output_dir: Some(output_dir.clone()),
+            no_overwrite: Some(false),
+            ..Default::default()
+        };
+        let config = Configuration::new(options, None);
+        assert!(setup_output_dir(&config).is_ok());
+        assert!(output_dir.exists());
+    }
+
+    #[test]
+    fn setup_output_dir_errors_if_directory_exists_and_no_overwrite_is_true() {
+        let temp_dir = tempdir().unwrap();
+        let output_dir = temp_dir.path().join("output");
+        fs::create_dir(&output_dir).unwrap();
+        let options = cli::Options {
+            output_dir: Some(output_dir.clone()),
+            no_overwrite: Some(true),
+            ..Default::default()
+        };
+        let config = Configuration::new(options, None);
+        assert!(setup_output_dir(&config).is_err());
+    }
 }

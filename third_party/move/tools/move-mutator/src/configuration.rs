@@ -52,14 +52,10 @@ impl Configuration {
         }
     }
 
-    /// Reads configuration from the TOML configuration source.
-    fn from_toml(toml_source: &str) -> anyhow::Result<Configuration> {
-        Ok(toml::from_str(toml_source)?)
-    }
-
     /// Reads configuration from the TOML configuration file.
     pub fn from_toml_file(toml_file: &Path) -> anyhow::Result<Configuration> {
-        Self::from_toml(&std::fs::read_to_string(toml_file)?)
+        let toml_source = std::fs::read_to_string(toml_file)?;
+        Ok(toml::from_str(toml_source.as_str())?)
     }
 
     /// Reads configuration from the JSON configuration source.
