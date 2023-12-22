@@ -17,7 +17,7 @@ pub struct Configuration {
     /// Path to the project.
     pub project_path: Option<PathBuf>,
     /// Configuration for the mutation operators (project-wide).
-    pub mutation: Option<MutationsConfiguration>,
+    pub mutation: Option<MutationConfig>,
     /// Configuration for the individual files. (optional)
     pub individual: Option<Vec<FileConfiguration>>,
 }
@@ -35,7 +35,7 @@ impl Configuration {
 
     /// Recognizes the file type based on the file extension.
     /// Currently supported file types are JSON and TOML.
-    pub fn recognize_file_type(file_path: &Path) -> anyhow::Result<FileType> {
+    fn get_file_type(file_path: &Path) -> anyhow::Result<FileType> {
         match file_path.extension().and_then(|s| s.to_str()) {
             Some("json") => Ok(FileType::JSON),
             Some("toml") => Ok(FileType::TOML),
@@ -45,7 +45,7 @@ impl Configuration {
 
     /// Reads configuration from the configuration file recognizing its type.
     pub fn from_file(file_path: &Path) -> anyhow::Result<Configuration> {
-        let file_type = Configuration::recognize_file_type(file_path)?;
+        let file_type = Configuration::get_file_type(file_path)?;
         match file_type {
             FileType::JSON => Configuration::from_json_file(file_path),
             FileType::TOML => Configuration::from_toml_file(file_path),
@@ -53,7 +53,7 @@ impl Configuration {
     }
 
     /// Reads configuration from the TOML configuration source.
-    pub fn from_toml(toml_source: &str) -> anyhow::Result<Configuration> {
+    fn from_toml(toml_source: &str) -> anyhow::Result<Configuration> {
         Ok(toml::from_str(toml_source)?)
     }
 
@@ -70,10 +70,10 @@ impl Configuration {
 
 /// Configuration of the mutation operators.
 #[derive(Debug, Serialize, Deserialize)]
-pub struct MutationsConfiguration {
+pub struct MutationConfig {
     /// Names of the mutation operators to use. If not provided, all operators will be used.
     pub operators: Vec<String>,
-    /// Names of the mutation categories to be used..
+    /// Names of the mutation categories to be used.
     pub categories: Vec<String>,
 }
 
@@ -85,7 +85,7 @@ pub struct FileConfiguration {
     /// Indicates if the mutants should be verified
     pub verify_mutants: Option<bool>,
     /// Names of the mutation operators to use. If not provided, all operators will be used.
-    pub mutation_operators: Option<MutationsConfiguration>,
+    pub mutation_operators: Option<MutationConfig>,
     /// Mutate only the functions with the given names.
     pub include_functions: Option<Vec<String>>,
     /// Mutate all functions except the ones with the given names.
@@ -227,7 +227,7 @@ mod tests {
     #[test]
     fn recognizes_json_file_type_correctly() {
         assert_eq!(
-            Configuration::recognize_file_type(Path::new("test.json")).unwrap(),
+            Configuration::get_file_type(Path::new("test.json")).unwrap(),
             FileType::JSON
         );
     }
@@ -235,7 +235,7 @@ mod tests {
     #[test]
     fn recognizes_toml_file_type_correctly() {
         assert_eq!(
-            Configuration::recognize_file_type(Path::new("test.toml")).unwrap(),
+            Configuration::get_file_type(Path::new("test.toml")).unwrap(),
             FileType::TOML
         );
     }
