@@ -48,6 +48,7 @@ pub fn run_move_mutator(
         let file_name = path.file_stem().unwrap().to_str().unwrap();
 
         // Check if file is not excluded from mutant generation
+        //TODO(asmie): refactor this when proper filtering will be introduced in the M3
         if let Some(excluded) = mutator_configuration.project.exclude_files.as_ref() {
             if excluded.contains(&path.to_path_buf()) {
                 continue;
