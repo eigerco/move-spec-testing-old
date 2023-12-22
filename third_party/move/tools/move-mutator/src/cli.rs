@@ -14,7 +14,7 @@ pub struct Options {
     pub exclude_files: Option<Vec<PathBuf>>,
     /// The path where to put the output files.
     pub output_dir: Option<PathBuf>,
-    /// Indicates if
+    /// Indicates if mutants should be verified and made sure mutants can compile.
     pub verify_mutants: Option<bool>,
     /// Indicates if the output files should be overwritten.
     pub no_overwrite: Option<bool>,

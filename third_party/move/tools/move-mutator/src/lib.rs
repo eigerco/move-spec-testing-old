@@ -11,11 +11,12 @@ mod report;
 use crate::compiler::generate_ast;
 use std::path::Path;
 
+use crate::configuration::Configuration;
 use crate::report::Report;
 use move_package::BuildConfig;
 use std::path::PathBuf;
 
-const OUTPUT_DIR: &str = "mutants_output";
+const DEFAULT_OUTPUT_DIR: &str = "mutants_output";
 
 /// Runs the Move mutator tool.
 /// Entry point for the Move mutator tool both for the CLI and the Rust API.
@@ -38,20 +39,7 @@ pub fn run_move_mutator(
 
     let mutants = mutate::mutate(ast)?;
 
-    let output_dir = mutator_configuration
-        .project
-        .output_dir
-        .unwrap_or(PathBuf::from(OUTPUT_DIR));
-
-    // Check if output directory exists and if it should be overwritten
-    if output_dir.exists() && mutator_configuration.project.no_overwrite.unwrap_or(false) {
-        return Err(anyhow::anyhow!(
-            "Output directory already exists. Use --no-overwrite=false to overwrite."
-        ));
-    }
-
-    let _ = std::fs::remove_dir_all(&output_dir);
-    std::fs::create_dir(&output_dir)?;
+    let output_dir = setup_output_dir(&mutator_configuration)?;
 
     let mut report: Report = Report::new();
 
@@ -79,7 +67,7 @@ pub fn run_move_mutator(
             for mutated in mutated_sources {
                 let mutant_path = PathBuf::from(format!(
                     "{}/{}_{}.move",
-                    &output_dir.to_str().unwrap_or(OUTPUT_DIR),
+                    &output_dir.to_str().unwrap_or(DEFAULT_OUTPUT_DIR),
                     file_name,
                     i
                 ));
@@ -108,4 +96,24 @@ pub fn run_move_mutator(
     report.save_to_text_file(report_path.join(Path::new("report.txt")).as_path())?;
 
     Ok(())
+}
+
+fn setup_output_dir(mutator_configuration: &Configuration) -> anyhow::Result<PathBuf> {
+    let output_dir = mutator_configuration
+        .project
+        .output_dir
+        .clone()
+        .unwrap_or(PathBuf::from(DEFAULT_OUTPUT_DIR));
+
+    // Check if output directory exists and if it should be overwritten
+    if output_dir.exists() && mutator_configuration.project.no_overwrite.unwrap_or(false) {
+        return Err(anyhow::anyhow!(
+            "Output directory already exists. Use --no-overwrite=false to overwrite."
+        ));
+    }
+
+    let _ = std::fs::remove_dir_all(&output_dir);
+    std::fs::create_dir(&output_dir)?;
+
+    Ok(output_dir)
 }

@@ -31,11 +31,11 @@ use move_package::BuildConfig;
 ///
 /// * `Result<(FilesSourceText, move_compiler::parser::ast::Program), anyhow::Error>` - tuple of FilesSourceText and Program if successful, or an error if any error occurs.
 pub fn generate_ast(
-    mutator_configuration: &Configuration,
+    mutator_config: &Configuration,
     config: BuildConfig,
     package_path: PathBuf,
 ) -> Result<(FilesSourceText, move_compiler::parser::ast::Program), anyhow::Error> {
-    let source_files = mutator_configuration.project.move_sources.clone();
+    let source_files = mutator_config.project.move_sources.clone();
 
     let named_addr_map = config
         .additional_named_addresses

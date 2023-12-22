@@ -2,15 +2,14 @@ use crate::cli::Options;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
-/// Configuration file type
+/// Configuration file type.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum FileType {
     JSON,
     TOML,
-    Unknown,
 }
 
-/// Configuration for the project.
+/// Mutator configuration for the Move project.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Configuration {
     /// Main project options. It's the same as the CLI options.
@@ -20,7 +19,7 @@ pub struct Configuration {
     /// Configuration for the mutation operators (project-wide).
     pub mutation: Option<MutationsConfiguration>,
     /// Configuration for the individual files. (optional)
-    pub individual: Option<Vec<IndividialConfiguration>>,
+    pub individual: Option<Vec<FileConfiguration>>,
 }
 
 impl Configuration {
@@ -36,21 +35,20 @@ impl Configuration {
 
     /// Recognizes the file type based on the file extension.
     /// Currently supported file types are JSON and TOML.
-    pub fn recognize_file_type(file_path: &Path) -> FileType {
+    pub fn recognize_file_type(file_path: &Path) -> anyhow::Result<FileType> {
         match file_path.extension().and_then(|s| s.to_str()) {
-            Some("json") => FileType::JSON,
-            Some("toml") => FileType::TOML,
-            _ => FileType::Unknown,
+            Some("json") => Ok(FileType::JSON),
+            Some("toml") => Ok(FileType::TOML),
+            _ => Err(anyhow::anyhow!("Unsupported file type")),
         }
     }
 
     /// Reads configuration from the configuration file recognizing its type.
     pub fn from_file(file_path: &Path) -> anyhow::Result<Configuration> {
-        let file_type = Configuration::recognize_file_type(file_path);
+        let file_type = Configuration::recognize_file_type(file_path)?;
         match file_type {
             FileType::JSON => Configuration::from_json_file(file_path),
             FileType::TOML => Configuration::from_toml_file(file_path),
-            _ => Err(anyhow::anyhow!("Unsupported file type")),
         }
     }
 
@@ -81,7 +79,7 @@ pub struct MutationsConfiguration {
 
 /// Configuration for the individual file.
 #[derive(Debug, Serialize, Deserialize)]
-pub struct IndividialConfiguration {
+pub struct FileConfiguration {
     /// The path to the Move source.
     pub file: PathBuf,
     /// Indicates if the mutants should be verified
@@ -229,7 +227,7 @@ mod tests {
     #[test]
     fn recognizes_json_file_type_correctly() {
         assert_eq!(
-            Configuration::recognize_file_type(Path::new("test.json")),
+            Configuration::recognize_file_type(Path::new("test.json")).unwrap(),
             FileType::JSON
         );
     }
@@ -237,16 +235,8 @@ mod tests {
     #[test]
     fn recognizes_toml_file_type_correctly() {
         assert_eq!(
-            Configuration::recognize_file_type(Path::new("test.toml")),
+            Configuration::recognize_file_type(Path::new("test.toml")).unwrap(),
             FileType::TOML
-        );
-    }
-
-    #[test]
-    fn recognizes_unknown_file_type_correctly() {
-        assert_eq!(
-            Configuration::recognize_file_type(Path::new("test.unknown")),
-            FileType::Unknown
         );
     }
 
