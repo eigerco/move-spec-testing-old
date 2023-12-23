@@ -31,6 +31,14 @@ pub enum MutationOperator {
 impl MutationOperator {
     /// Applies the mutation operator to the given source code.
     /// Returns differently mutated source code listings in a vector.
+    ///
+    /// # Arguments
+    ///
+    /// * `source` - The source code to apply the mutation operator to.
+    ///
+    /// # Returns
+    ///
+    /// * `Vec<MutantInfo>` - A vector of `MutantInfo` instances representing the mutated source code.
     pub fn apply(&self, source: &str) -> Vec<MutantInfo> {
         debug!("Applying mutation operator: {}", self);
 

@@ -49,7 +49,11 @@ fn traverse_module(module: parser::ast::ModuleDefinition) -> anyhow::Result<Vec<
         .collect::<Result<Vec<_>, _>>()?
         .concat();
 
-    trace!("Found {} possible mutations in module {}", mutants.len(), module.name);
+    trace!(
+        "Found {} possible mutations in module {}",
+        mutants.len(),
+        module.name
+    );
     Ok(mutants)
 }
 

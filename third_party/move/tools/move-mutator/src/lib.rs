@@ -15,7 +15,6 @@ mod report;
 use crate::compiler::{generate_ast, verify_mutant};
 use std::path::Path;
 
-use crate::cli::DEFAULT_OUTPUT_DIR;
 use crate::configuration::Configuration;
 use crate::report::Report;
 use move_package::BuildConfig;
@@ -23,6 +22,16 @@ use std::path::PathBuf;
 
 /// Runs the Move mutator tool.
 /// Entry point for the Move mutator tool both for the CLI and the Rust API.
+///
+/// # Arguments
+///
+/// * `options` - Command line options passed to the Move mutator tool.
+/// * `config` - The build configuration for the Move package.
+/// * `package_path` - The path to the Move package.
+///
+/// # Returns
+///
+/// * `anyhow::Result<()>` - Returns `Ok(())` if the mutation process completes successfully, or an error if any error occurs.
 pub fn run_move_mutator(
     options: cli::Options,
     config: BuildConfig,
@@ -35,19 +44,17 @@ pub fn run_move_mutator(
         options, config, package_path
     );
 
+    // Load configuration from file or create a new one
     let mutator_configuration = match options.configuration_file {
-        Some(path) => configuration::Configuration::from_file(path.as_path())?,
-        None => configuration::Configuration::new(options, Some(package_path.clone())),
+        Some(path) => Configuration::from_file(path.as_path())?,
+        None => Configuration::new(options, Some(package_path.clone())),
     };
 
     trace!("Mutator configuration: {:?}", mutator_configuration);
 
     let (files, ast) = generate_ast(&mutator_configuration, &config, package_path)?;
-
     let mutants = mutate::mutate(ast)?;
-
     let output_dir = setup_output_dir(&mutator_configuration)?;
-
     let mut report: Report = Report::new();
 
     for (hash, (filename, source)) in files {
@@ -120,17 +127,30 @@ pub fn run_move_mutator(
 }
 
 /// Sets up the path for the mutant.
+///
+/// # Arguments
+///
+/// * `output_dir` - The directory where the mutant will be output.
+/// * `filename` - The filename of the original source file.
+/// * `index` - The index of the mutant.
+///
+/// # Returns
+///
+/// * `PathBuf` - The path to the mutant.
 #[inline]
 fn setup_mutant_path(output_dir: &Path, filename: &str, index: u64) -> PathBuf {
-    PathBuf::from(format!(
-        "{}/{}_{}.move",
-        &output_dir.to_str().unwrap_or(DEFAULT_OUTPUT_DIR),
-        filename,
-        index
-    ))
+    output_dir.join(format!("{}_{}.move", filename, index))
 }
 
 /// Sets up the output directory for the mutants.
+///
+/// # Arguments
+///
+/// * `mutator_configuration` - The configuration for the mutator.
+///
+/// # Returns
+///
+/// * `anyhow::Result<PathBuf>` - Returns the path to the output directory if successful, or an error if any error occurs.
 fn setup_output_dir(mutator_configuration: &Configuration) -> anyhow::Result<PathBuf> {
     trace!("Setting up output directory");
     let output_dir = mutator_configuration.project.out_mutant_dir.clone();
@@ -173,7 +193,7 @@ mod tests {
         let filename = "test";
         let index = 1;
         let result = setup_mutant_path(output_dir, filename, index);
-        assert_eq!(result, PathBuf::from("/test_1.move"));
+        assert_eq!(result, PathBuf::from("test_1.move"));
     }
 
     #[test]
