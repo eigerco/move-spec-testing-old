@@ -1,3 +1,7 @@
+extern crate pretty_env_logger;
+#[macro_use]
+extern crate log;
+
 pub mod cli;
 mod compiler;
 
@@ -24,7 +28,9 @@ pub fn run_move_mutator(
     config: BuildConfig,
     package_path: PathBuf,
 ) -> anyhow::Result<()> {
-    println!(
+    pretty_env_logger::init();
+
+    info!(
         "Executed move-mutator with the following options: {:?} \n config: {:?} \n package path: {:?}",
         options, config, package_path
     );
@@ -33,6 +39,8 @@ pub fn run_move_mutator(
         Some(path) => configuration::Configuration::from_file(path.as_path())?,
         None => configuration::Configuration::new(options, Some(package_path.clone())),
     };
+
+    trace!("Mutator configuration: {:?}", mutator_configuration);
 
     let (files, ast) = generate_ast(&mutator_configuration, &config, package_path)?;
 
@@ -45,6 +53,8 @@ pub fn run_move_mutator(
     for (hash, (filename, source)) in files {
         let path = Path::new(filename.as_str());
         let file_name = path.file_stem().unwrap().to_str().unwrap();
+
+        trace!("Processing file: {:?}", path);
 
         // Check if file is not excluded from mutant generation
         //TODO(asmie): refactor this when proper filtering will be introduced in the M3
@@ -66,13 +76,12 @@ pub fn run_move_mutator(
             let mutated_sources = mutant.apply(&source);
             for mutated in mutated_sources {
                 if mutator_configuration.project.verify_mutants {
-                    let res = verify_mutant(
-                        &mutator_configuration,
-                        &config,
-                        &mutated.mutated_source,
-                        path,
-                    );
+                    let res = verify_mutant(&config, &mutated.mutated_source, path);
                     if res.is_err() {
+                        warn!(
+                            "Mutant {} is not valid and will not be generated. Error: {:?}",
+                            mutant, res
+                        );
                         continue;
                     }
                 }
@@ -80,13 +89,11 @@ pub fn run_move_mutator(
                 let mutant_path = setup_mutant_path(&output_dir, file_name, i);
                 std::fs::write(&mutant_path, &mutated.mutated_source)?;
 
-                if mutator_configuration.project.verbose {
-                    println!(
-                        "{} written to {}",
-                        mutant,
-                        mutant_path.to_str().unwrap_or("")
-                    );
-                }
+                info!(
+                    "{} written to {}",
+                    mutant,
+                    mutant_path.to_str().unwrap_or("")
+                );
 
                 let mut entry = report::MutationReport::new(
                     mutant_path.as_path(),
@@ -104,9 +111,11 @@ pub fn run_move_mutator(
 
     let report_path = PathBuf::from(output_dir);
 
+    trace!("Saving reports to: {:?}", report_path);
     report.save_to_json_file(report_path.join(Path::new("report.json")).as_path())?;
     report.save_to_text_file(report_path.join(Path::new("report.txt")).as_path())?;
 
+    trace!("Mutator tool is done here...");
     Ok(())
 }
 
@@ -123,6 +132,7 @@ fn setup_mutant_path(output_dir: &Path, filename: &str, index: u64) -> PathBuf {
 
 /// Sets up the output directory for the mutants.
 fn setup_output_dir(mutator_configuration: &Configuration) -> anyhow::Result<PathBuf> {
+    trace!("Setting up output directory");
     let output_dir = mutator_configuration.project.out_mutant_dir.clone();
 
     // Check if output directory exists and if it should be overwritten
@@ -134,6 +144,8 @@ fn setup_output_dir(mutator_configuration: &Configuration) -> anyhow::Result<Pat
 
     let _ = std::fs::remove_dir_all(&output_dir);
     std::fs::create_dir(&output_dir)?;
+
+    debug!("Output directory set to: {:?}", output_dir);
 
     Ok(output_dir)
 }
