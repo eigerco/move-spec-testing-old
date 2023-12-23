@@ -56,13 +56,9 @@ pub fn generate_ast(
         })
         .collect::<BTreeMap<_, _>>();
 
-    let out_dir = "mutator_build";
-    let interface_files_dir = format!("{}/generated_interface_files", out_dir);
+    let out_dir = mutator_config.project.out_mutant_dir.join("mutator_build");
+    let interface_files_dir = out_dir.join("generated_interface_files").to_str().unwrap_or("");
     let flags = Flags::empty();
-
-    //TODO(asmie): check if root is not found (we cannot parse then Move.toml and get the address resolution)
-    // Maybe we should then allow only source files with numerical addresses
-    let _rooted_path = SourcePackageLayout::try_find_root(&package_path.canonicalize()?);
 
     let (files, res) = Compiler::from_files(
         source_files,
@@ -71,7 +67,7 @@ pub fn generate_ast(
         flags,
         &config.compiler_config.known_attributes,
     )
-    .set_interface_files_dir(interface_files_dir)
+    .set_interface_files_dir(interface_files_dir.to_string())
     .run::<PASS_PARSER>()?;
 
     let (_, stepped) = unwrap_or_report_diagnostics(&files, res);
@@ -104,8 +100,7 @@ pub fn verify_mutant(
     let rooted_path = SourcePackageLayout::try_find_root(&original_file.canonicalize()?)?;
 
     // Get the relative path to the original file
-    let relative_path = original_file.canonicalize().unwrap();
-    let relative_path = relative_path.strip_prefix(&rooted_path)?;
+    let relative_path = original_file.canonicalize()?.strip_prefix(&rooted_path)?;
 
     let tempdir = tempfile::tempdir()?;
 
@@ -115,7 +110,7 @@ pub fn verify_mutant(
     copy_dir_all(&rooted_path, &tempdir.path())?;
 
     // Write the mutated source to the tempdir in place of the original file
-    std::fs::write(tempdir.path().join(relative_path), mutated_source)?;
+    std::fs::write(tempdir.path().join(&relative_path), mutated_source)?;
 
     let mut output: Box<dyn Write> = if mutator_config.project.verbose {
         Box::new(std::io::stdout())
