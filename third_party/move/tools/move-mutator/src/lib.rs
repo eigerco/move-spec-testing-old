@@ -72,6 +72,7 @@ pub fn run_move_mutator(
                         &mutated.mutated_source,
                         path,
                     );
+                    // In case the mutant is not a valid Move file, skip the mutant (do not save it)
                     if res.is_err() {
                         continue;
                     }

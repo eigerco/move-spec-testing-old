@@ -84,6 +84,10 @@ pub fn generate_ast(
 /// This function compiles the mutated source and checks if the compilation is successful.
 /// If the compilation is successful, the mutant is valid.
 ///
+/// This function uses the Move compiler to compile the mutated source. To do so, it copies the whole package
+/// to a temporary directory and replaces the original file with the mutated source. It may introduce problems
+/// with dependencies that are specified as relative paths to the package root.
+///
 /// # Arguments
 ///
 /// * `mutator_config` - the configuration for the mutator.
@@ -101,18 +105,18 @@ pub fn verify_mutant(
     original_file: &Path,
 ) -> Result<(), anyhow::Error> {
     // Find the root for the package
-    let rooted_path = SourcePackageLayout::try_find_root(&original_file.canonicalize()?)?;
+    let root = SourcePackageLayout::try_find_root(&original_file.canonicalize()?)?;
 
     // Get the relative path to the original file
-    let relative_path = original_file.canonicalize().unwrap();
-    let relative_path = relative_path.strip_prefix(&rooted_path)?;
+    let relative_path = original_file.canonicalize()?;
+    let relative_path = relative_path.strip_prefix(&root)?;
 
     let tempdir = tempfile::tempdir()?;
 
     // Copy the whole package to the tempdir
     // We need to copy the whole package because the Move compiler needs to find the Move.toml file and all the dependencies
     // as we don't know which files are needed for the compilation
-    copy_dir_all(&rooted_path, &tempdir.path())?;
+    copy_dir_all(&root, &tempdir.path())?;
 
     // Write the mutated source to the tempdir in place of the original file
     std::fs::write(tempdir.path().join(relative_path), mutated_source)?;
@@ -148,8 +152,7 @@ fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> io::Result<()> 
 
     for entry in fs::read_dir(src)? {
         let entry = entry?;
-        let ty = entry.file_type()?;
-        if ty.is_dir() {
+        if entry.file_type()?.is_dir() {
             copy_dir_all(entry.path(), dst.as_ref().join(entry.file_name()))?;
         } else {
             fs::copy(entry.path(), dst.as_ref().join(entry.file_name()))?;
