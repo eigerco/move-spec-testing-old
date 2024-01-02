@@ -57,12 +57,10 @@ pub fn generate_ast(
         })
         .collect::<BTreeMap<_, _>>();
 
-    let out_dir = mutator_config.project.out_mutant_dir.join("mutator_build");
-    let interface_files_dir = out_dir.join("generated_interface_files");
+    let interface_files_dir = mutator_config.project.out_mutant_dir.join("generated_interface_files/mutator_build");
     let flags = Flags::empty();
 
     trace!("Interface files dir: {:?}", interface_files_dir);
-    trace!("Building output directory: {:?}", out_dir);
 
     let (files, res) = Compiler::from_files(
         source_files,
@@ -101,13 +99,13 @@ pub fn verify_mutant(
     original_file: &Path,
 ) -> Result<(), anyhow::Error> {
     // Find the root for the package
-    let rooted_path = SourcePackageLayout::try_find_root(&original_file.canonicalize()?)?;
+    let root = SourcePackageLayout::try_find_root(&original_file.canonicalize()?)?;
 
-    debug!("Package path found: {:?}", rooted_path);
+    debug!("Package path found: {:?}", root);
 
     // Get the relative path to the original file
     let relative_path = original_file.canonicalize()?;
-    let relative_path = relative_path.strip_prefix(&rooted_path)?;
+    let relative_path = relative_path.strip_prefix(&root)?;
 
     debug!("Relative path: {:?}", relative_path);
 
@@ -118,7 +116,7 @@ pub fn verify_mutant(
     // Copy the whole package to the tempdir
     // We need to copy the whole package because the Move compiler needs to find the Move.toml file and all the dependencies
     // as we don't know which files are needed for the compilation
-    copy_dir_all(&rooted_path, &tempdir.path())?;
+    copy_dir_all(&root, &tempdir.path())?;
 
     // Write the mutated source to the tempdir in place of the original file
     std::fs::write(tempdir.path().join(&relative_path), mutated_source)?;
@@ -137,12 +135,11 @@ pub fn verify_mutant(
 
     // Compile the package
     working_config
-        .clone()
         .compile_package(&tempdir.path(), &mut compilation_msg)?;
 
     info!(
         "Compilation status: {}",
-        String::from_utf8(compilation_msg).unwrap_or("".to_string())
+        String::from_utf8(compilation_msg).unwrap_or("Internal error: can't convert compilation error to UTF8".to_string())
     );
 
     Ok(())
