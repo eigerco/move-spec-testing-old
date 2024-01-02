@@ -39,18 +39,18 @@ impl Report {
     pub fn save_to_text_file(&self, path: &Path) -> std::io::Result<()> {
         let mut file = std::fs::File::create(path)?;
 
-        info!("Saving report to {}", path.to_str().unwrap_or(""));
+        info!("Saving report to {}", path.display());
 
         for entry in &self.mutants {
             writeln!(
                 file,
                 "Mutant path: {}",
-                entry.mutant_path.to_str().unwrap_or("")
+                entry.mutant_path.display()
             )?;
             writeln!(
                 file,
                 "Original file: {}",
-                entry.original_file.to_str().unwrap_or("")
+                entry.original_file.display()
             )?;
             writeln!(file, "Mutations:")?;
             for modification in &entry.mutations {
@@ -68,7 +68,7 @@ impl Report {
             writeln!(file, "----------------------------------------")?;
         }
 
-        debug!("Report saved to {}", path.to_str().unwrap_or(""));
+        debug!("Report saved to {}", path.display());
 
         Ok(())
     }
