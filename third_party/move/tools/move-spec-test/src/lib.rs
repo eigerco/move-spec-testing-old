@@ -7,7 +7,8 @@ extern crate log;
 use move_package::BuildConfig;
 use std::path::PathBuf;
 
-/// This function runs the specification testing.
+/// This function runs the specification testing, which is a combination of the
+/// mutator tool and the prover tool
 /// It takes the CLI options and constructs appropriate options for the
 /// Move Mutator tool and Move Prover tool. Then it mutates the code storing
 /// results in a temporary directory. Then it runs the prover on the mutated

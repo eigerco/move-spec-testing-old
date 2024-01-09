@@ -2,7 +2,7 @@ use clap::*;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
-/// Command line options for specification test tool
+/// Command line options for specification test tool.
 #[derive(Parser, Default, Debug, Clone, Deserialize, Serialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Options {
