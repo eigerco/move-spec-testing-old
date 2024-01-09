@@ -45,6 +45,7 @@ move-mutator = { path = "../move-mutator" }
 move-package = { path = "../move-package" }
 move-prover = { path = "../../move-prover" }
 move-resource-viewer = { path = "../move-resource-viewer" }
+move-spec-test = { path = "../move-spec-test" }
 move-stdlib = { path = "../../move-stdlib" }
 # move-symbol-pool = { path = "../../move-symbol-pool" }
 move-unit-test = { path = "../move-unit-test" }
