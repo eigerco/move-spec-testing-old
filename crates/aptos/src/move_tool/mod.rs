@@ -558,7 +558,7 @@ impl CliCommand<&'static str> for MutatePackage {
         let path = self.move_options.get_package_path()?;
 
         let result =
-            move_mutator::run_move_mutator(mutator_options.unwrap_or_default(), config, path)
+            move_mutator::run_move_mutator(mutator_options.unwrap_or_default(), &config, &path)
                 .map_err(|err| CliError::UnexpectedError(err.to_string()));
 
         match result {

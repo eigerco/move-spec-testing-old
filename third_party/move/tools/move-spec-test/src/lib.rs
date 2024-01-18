@@ -59,7 +59,7 @@ pub fn run_spec_test(
 
     debug!("Running the move mutator tool");
 
-    move_mutator::run_move_mutator(mutator_conf, config.clone(), package_path.clone())?;
+    move_mutator::run_move_mutator(mutator_conf, config, package_path)?;
 
     let report =
         move_mutator::report::Report::load_from_json_file(&outdir_mutant.join("report.json"))?;
