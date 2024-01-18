@@ -617,7 +617,7 @@ impl CliCommand<&'static str> for SpecTestPackage {
         let path = PathBuf::from(".");
 
         let result = task::spawn_blocking(move || {
-            move_spec_test::run_spec_test(spec_test_options.unwrap_or_default(), config, path)
+            move_spec_test::run_spec_test(&spec_test_options.unwrap_or_default(), &config, &path)
         })
             .await
             .map_err(|err| CliError::UnexpectedError(err.to_string()))?;

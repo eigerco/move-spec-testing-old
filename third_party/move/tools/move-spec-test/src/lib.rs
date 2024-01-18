@@ -24,13 +24,17 @@ use std::path::PathBuf;
 /// * `config` - A `BuildConfig` representing the build configuration.
 /// * `package_path` - A `PathBuf` representing the path to the package.
 ///
+/// # Errors
+///
+/// Errors are returned as `anyhow::Result`.
+///
 /// # Returns
 ///
 /// * `anyhow::Result<()>` - The result of the spec test.
 pub fn run_spec_test(
-    options: cli::Options,
-    config: BuildConfig,
-    package_path: PathBuf,
+    options: &cli::Options,
+    config: &BuildConfig,
+    package_path: &PathBuf,
 ) -> anyhow::Result<()> {
     // We need to initialize logger using try_init() as it might be already initialized in some other tool
     // (e.g. spec-test). If we use init() instead, we will get an abort.
@@ -38,8 +42,8 @@ pub fn run_spec_test(
 
     info!("Running spec test");
 
-    let mut mutator_conf = cli::create_mutator_options(&options);
-    let prover_conf = cli::generate_prover_options(&options)?;
+    let mut mutator_conf = cli::create_mutator_options(options);
+    let prover_conf = cli::generate_prover_options(options)?;
 
     // Setup temporary directory structure
     let outdir = tempfile::tempdir()?.into_path();
@@ -61,11 +65,11 @@ pub fn run_spec_test(
         move_mutator::report::Report::load_from_json_file(&outdir_mutant.join("report.json"))?;
 
     // Proving part
-    move_mutator::compiler::copy_dir_all(&package_path, &outdir_original)?;
+    move_mutator::compiler::copy_dir_all(package_path, &outdir_original)?;
 
     let mut error_writer = termcolor::StandardStream::stderr(termcolor::ColorChoice::Auto);
 
-    let result = prove(&config, &package_path, &prover_conf, &mut error_writer);
+    let result = prove(config, package_path, &prover_conf, &mut error_writer);
 
     if let Err(e) = result {
         let msg = format!("Original code verification failed! Prover failed with error: {e}");
@@ -84,7 +88,7 @@ pub fn run_spec_test(
         let outdir_prove = outdir.join("prove");
 
         let _ = fs::remove_dir_all(&outdir_prove);
-        move_mutator::compiler::copy_dir_all(&package_path, &outdir_prove)?;
+        move_mutator::compiler::copy_dir_all(package_path, &outdir_prove)?;
 
         trace!(
             "Copying mutant file {:?} to the package directory {:?}",
@@ -99,7 +103,7 @@ pub fn run_spec_test(
             ));
         }
 
-        let result = prove(&config, &outdir_prove, &prover_conf, &mut error_writer);
+        let result = prove(config, &outdir_prove, &prover_conf, &mut error_writer);
 
         if let Err(e) = result {
             trace!("Mutant killed! Prover failed with error: {}", e);
@@ -109,8 +113,8 @@ pub fn run_spec_test(
         }
     }
 
-    println!("Total mutants: {}", total_mutants);
-    println!("Killed mutants: {}", killed_mutants);
+    println!("Total mutants: {total_mutants}");
+    println!("Killed mutants: {killed_mutants}");
 
     Ok(())
 }
