@@ -612,8 +612,8 @@ impl CliCommand<&'static str> for SpecTestPackage {
         };
 
         let path = self.move_options.get_package_path()?;
-        let path = SourcePackageLayout::try_find_root(&path.canonicalize().unwrap_or("".into()))?;
-        std::env::set_current_dir(path).unwrap();
+        let path = SourcePackageLayout::try_find_root(&path.canonicalize().unwrap_or(".".into()))?;
+        std::env::set_current_dir(&path).map_err(|err| CliError::UnexpectedError(err.to_string()))?;
         let path = PathBuf::from(".");
 
         let result = task::spawn_blocking(move || {
