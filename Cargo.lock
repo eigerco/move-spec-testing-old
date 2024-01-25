@@ -279,9 +279,7 @@ dependencies = [
  "move-coverage",
  "move-disassembler",
  "move-ir-types",
- "move-mutator",
  "move-package",
- "move-spec-test",
  "move-symbol-pool",
  "move-unit-test",
  "move-vm-runtime",
@@ -6911,15 +6909,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "diffy"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e616e59155c92257e84970156f506287853355f58cd4a6eb167385722c32b790"
-dependencies = [
- "nu-ansi-term",
-]
-
-[[package]]
 name = "digest"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -10368,11 +10357,9 @@ dependencies = [
  "move-errmapgen",
  "move-ir-types",
  "move-model",
- "move-mutator",
  "move-package",
  "move-prover",
  "move-resource-viewer",
- "move-spec-test",
  "move-stdlib",
  "move-symbol-pool",
  "move-table-extension",
@@ -10704,25 +10691,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "move-mutator"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "clap 4.4.12",
- "diffy",
- "log",
- "move-command-line-common",
- "move-compiler",
- "move-ir-types",
- "move-package",
- "pretty_env_logger",
- "serde",
- "serde_json",
- "tempfile",
- "toml 0.5.11",
-]
-
-[[package]]
 name = "move-package"
 version = "0.1.0"
 dependencies = [
@@ -10889,25 +10857,6 @@ dependencies = [
  "move-core-types",
  "once_cell",
  "serde",
-]
-
-[[package]]
-name = "move-spec-test"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "clap 4.4.12",
- "log",
- "move-command-line-common",
- "move-mutator",
- "move-package",
- "move-prover",
- "pretty_env_logger",
- "serde",
- "serde_json",
- "tabled",
- "tempfile",
- "termcolor",
 ]
 
 [[package]]
@@ -11809,17 +11758,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "papergrid"
-version = "0.11.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9ad43c07024ef767f9160710b3a6773976194758c7919b17e63b863db0bdf7fb"
-dependencies = [
- "bytecount",
- "fnv",
- "unicode-width",
-]
-
-[[package]]
 name = "parity-scale-codec"
 version = "2.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -12625,16 +12563,6 @@ checksum = "af7cee1a6c8a5b9208b3cb1061f10c0cb689087b3d8ce85fb9d2dd7a29b6ba66"
 dependencies = [
  "diff",
  "yansi 0.5.1",
-]
-
-[[package]]
-name = "pretty_env_logger"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "865724d4dbe39d9f3dd3b52b88d859d66bcb2d6a0acfd5ea68a65fb66d4bdc1c"
-dependencies = [
- "env_logger",
- "log",
 ]
 
 [[package]]
@@ -15100,30 +15028,6 @@ checksum = "a75fb188eb626b924683e3b95e3a48e63551fcfb51949de2f06a9d91dbee93c9"
 dependencies = [
  "core-foundation-sys",
  "libc",
-]
-
-[[package]]
-name = "tabled"
-version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4c998b0c8b921495196a48aabaf1901ff28be0760136e31604f7967b0792050e"
-dependencies = [
- "papergrid",
- "tabled_derive",
- "unicode-width",
-]
-
-[[package]]
-name = "tabled_derive"
-version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4c138f99377e5d653a371cdad263615634cfc8467685dfe8e73e2b8e98f44b17"
-dependencies = [
- "heck 0.4.1",
- "proc-macro-error",
- "proc-macro2 1.0.75",
- "quote 1.0.35",
- "syn 1.0.109",
 ]
 
 [[package]]
