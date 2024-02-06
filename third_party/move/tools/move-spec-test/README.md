@@ -14,12 +14,14 @@ This tool is used to test the quality of the Move specifications.
 The Move Specification Test tool uses the Move Mutator tool to generate mutants
 of the Move code. Then, it runs the Move Prover tool to check if the mutants
 are killed (so Prover will catch an error) by the original specifications.
-If the mutants are not killed, it means that the specification is incorrect or
-not tight enough to catch such cases.
+If the mutants are not killed, it means that the specification has issues and
+is incorrect or not tight enough to catch such cases, so it should be improved.
 
-Move Specification Test tool works on the Move packages and cannot be run on
-single Move files. It is possible to run the tool on the whole package or
-specific modules only.
+Move Specification Test tool can be used on:
+- whole Move packages (projects)
+- specific modules only
+
+It cannot be used with single Move files.
 
 The tool generates a report in a JSON format. The report contains information
 about the number of mutants tested and killed and also the differences between
@@ -49,7 +51,7 @@ details.
 ## Usage
 
 Before checking if the tool works, please make sure that the Move Prover is
-installed and configured correctly. Especially, be sure that all the
+installed and configured correctly. Especially, ensure that all the
 dependencies and backend tools are installed and accessible.
 
 In case of any problems with the backend tools, please try to prove any of the
