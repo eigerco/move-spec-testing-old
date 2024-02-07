@@ -1,3 +1,4 @@
+mod benchmark;
 pub mod cli;
 mod prover;
 mod report;
@@ -6,6 +7,7 @@ extern crate pretty_env_logger;
 #[macro_use]
 extern crate log;
 
+use crate::benchmark::{Benchmark, Benchmarks};
 use crate::prover::prove;
 use anyhow::anyhow;
 use move_package::source_package::layout::SourcePackageLayout;
@@ -47,6 +49,9 @@ pub fn run_spec_test(
 
     info!("Running specification tester with the following options: {options:?} and package path: {package_path:?}");
 
+    let mut benchmarks = Benchmarks::new();
+    benchmarks.spec_test.start();
+
     let prover_conf = cli::generate_prover_options(options)?;
 
     // Setup temporary directory structure.
@@ -55,11 +60,13 @@ pub fn run_spec_test(
 
     fs::create_dir_all(&outdir_original)?;
 
+    benchmarks.mutator.start();
     let outdir_mutant = if let Some(mutant_path) = &options.use_generated_mutants {
         mutant_path.clone()
     } else {
         run_mutator(options, config, &package_path, &outdir)?
     };
+    benchmarks.mutator.stop();
 
     let report =
         move_mutator::report::Report::load_from_json_file(&outdir_mutant.join("report.json"))?;
@@ -79,6 +86,7 @@ pub fn run_spec_test(
 
     let mut spec_report = report::Report::new();
 
+    benchmarks.prover.start();
     for elem in report.get_mutants() {
         let mutant_file = elem.mutant_path();
         // Strip prefix to get the path relative to the package directory (or take that path if it's already relative).
@@ -105,7 +113,10 @@ pub fn run_spec_test(
             ));
         }
 
+        let mut proving_timer = Benchmark::new();
         let result = prove(config, &outdir_prove, &prover_conf, &mut error_writer);
+        proving_timer.stop();
+        benchmarks.prover_results.push(proving_timer);
 
         if let Err(e) = result {
             trace!("Mutant killed! Prover failed with error: {e}");
@@ -120,6 +131,8 @@ pub fn run_spec_test(
         }
     }
 
+    benchmarks.prover.stop();
+
     if let Some(outfile) = &options.output {
         spec_report.save_to_json_file(outfile)?;
     }
@@ -127,6 +140,9 @@ pub fn run_spec_test(
     println!("\nTotal mutants tested: {}", spec_report.mutants_tested());
     println!("Total mutants killed: {}\n", spec_report.mutants_killed());
     spec_report.print_table();
+
+    benchmarks.spec_test.stop();
+    benchmarks.display();
 
     Ok(())
 }
