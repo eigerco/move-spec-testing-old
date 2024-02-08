@@ -67,9 +67,9 @@ pub fn run_spec_test(
         mutant_path.clone()
     } else {
         benchmarks.mutator.start();
-        let res = run_mutator(options, config, &package_path, &outdir)?;
+        let outdir_mutant = run_mutator(options, config, &package_path, &outdir)?;
         benchmarks.mutator.stop();
-        res
+        outdir_mutant
     };
 
     let report =
@@ -90,12 +90,12 @@ pub fn run_spec_test(
 
     let mut spec_report = report::Report::new();
 
-    let mut proving_benchmark = vec![Benchmark::new(); report.get_mutants().len()];
+    let mut proving_benchmarks = vec![Benchmark::new(); report.get_mutants().len()];
     benchmarks.prover.start();
     for (elem, benchmark) in report
         .get_mutants()
         .iter()
-        .zip(proving_benchmark.iter_mut())
+        .zip(proving_benchmarks.iter_mut())
     {
         let mutant_file = elem.mutant_path();
         // Strip prefix to get the path relative to the package directory (or take that path if it's already relative).
@@ -140,7 +140,7 @@ pub fn run_spec_test(
     }
 
     benchmarks.prover.stop();
-    benchmarks.prover_results.extend(proving_benchmark);
+    benchmarks.prover_results = proving_benchmarks;
 
     if let Some(outfile) = &options.output {
         spec_report.save_to_json_file(outfile)?;
