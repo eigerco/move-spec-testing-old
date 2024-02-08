@@ -49,6 +49,9 @@ pub fn run_spec_test(
 
     info!("Running specification tester with the following options: {options:?} and package path: {package_path:?}");
 
+    // Always create and use benchmarks.
+    // Benchmarks call only time getting functions, so it's safe to use them in any case and
+    // they are not expensive to create (won't hit the performance).
     let mut benchmarks = Benchmarks::new();
     benchmarks.spec_test.start();
 
@@ -60,13 +63,14 @@ pub fn run_spec_test(
 
     fs::create_dir_all(&outdir_original)?;
 
-    benchmarks.mutator.start();
     let outdir_mutant = if let Some(mutant_path) = &options.use_generated_mutants {
         mutant_path.clone()
     } else {
-        run_mutator(options, config, &package_path, &outdir)?
+        benchmarks.mutator.start();
+        let res = run_mutator(options, config, &package_path, &outdir)?;
+        benchmarks.mutator.stop();
+        res
     };
-    benchmarks.mutator.stop();
 
     let report =
         move_mutator::report::Report::load_from_json_file(&outdir_mutant.join("report.json"))?;
@@ -86,8 +90,13 @@ pub fn run_spec_test(
 
     let mut spec_report = report::Report::new();
 
+    let mut proving_benchmark = vec![Benchmark::new(); report.get_mutants().len()];
     benchmarks.prover.start();
-    for elem in report.get_mutants() {
+    for (elem, benchmark) in report
+        .get_mutants()
+        .iter()
+        .zip(proving_benchmark.iter_mut())
+    {
         let mutant_file = elem.mutant_path();
         // Strip prefix to get the path relative to the package directory (or take that path if it's already relative).
         let original_file = elem
@@ -113,10 +122,9 @@ pub fn run_spec_test(
             ));
         }
 
-        let mut proving_timer = Benchmark::new();
+        benchmark.start();
         let result = prove(config, &outdir_prove, &prover_conf, &mut error_writer);
-        proving_timer.stop();
-        benchmarks.prover_results.push(proving_timer);
+        benchmark.stop();
 
         if let Err(e) = result {
             trace!("Mutant killed! Prover failed with error: {e}");
@@ -132,6 +140,7 @@ pub fn run_spec_test(
     }
 
     benchmarks.prover.stop();
+    benchmarks.prover_results.extend(proving_benchmark);
 
     if let Some(outfile) = &options.output {
         spec_report.save_to_json_file(outfile)?;
