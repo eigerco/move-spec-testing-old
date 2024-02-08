@@ -46,6 +46,9 @@ pub trait MutationOperator {
 
     /// Returns the file hash of the file that this mutation operator is in.
     fn get_file_hash(&self) -> FileHash;
+
+    /// Returns the name of the mutation operator.
+    fn get_name(&self) -> String;
 }
 
 /// The mutation operator to apply.
@@ -81,6 +84,17 @@ impl MutationOperator for MutationOp {
             MutationOp::Literal(literal) => literal.get_file_hash(),
             MutationOp::IfElse(if_else) => if_else.get_file_hash(),
             MutationOp::DeleteStmt(delete_stmt) => delete_stmt.get_file_hash(),
+        }
+    }
+
+    fn get_name(&self) -> String {
+        match self {
+            MutationOp::BinaryOp(bin_op) => bin_op.get_name(),
+            MutationOp::UnaryOp(unary_op) => unary_op.get_name(),
+            MutationOp::BreakContinue(break_continue) => break_continue.get_name(),
+            MutationOp::Literal(literal) => literal.get_name(),
+            MutationOp::IfElse(if_else) => if_else.get_name(),
+            MutationOp::DeleteStmt(delete_stmt) => delete_stmt.get_name(),
         }
     }
 }
