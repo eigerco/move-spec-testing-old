@@ -62,7 +62,7 @@ impl MutationOperator for BreakContinue {
         self.operation.exp.loc.file_hash()
     }
 
-    fn get_name(&self) -> String {
+    fn name(&self) -> String {
         OPERATOR_NAME.to_string()
     }
 }

@@ -115,7 +115,7 @@ impl MutationOperator for Literal {
         self.operation.loc.file_hash()
     }
 
-    fn get_name(&self) -> String {
+    fn name(&self) -> String {
         OPERATOR_NAME.to_string()
     }
 }
