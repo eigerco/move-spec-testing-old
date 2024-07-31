@@ -108,3 +108,4 @@ $ move-mutator -p third_party/move/tools/move-mutator/tests/move-assets/simple/
 We are engineers. We contribute to various ecosystems by building low level implementations and core components. We built these tools because we believe in Move. We are happy to contribute to the Aptos ecosystem and will continue to do so in the future.
 
 Contact us at hello@eiger.co
+Follow us on [X/Twitter](https://x.com/eiger_co)
